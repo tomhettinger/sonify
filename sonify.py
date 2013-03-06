@@ -1,55 +1,55 @@
-import Image
+#!/usr/bin/python
+import sys
 import math
-from matplotlib import pyplot as pl
+import argparse
+import Image
+from itertools import *  # used for count()
 
-
-# Play a .wav file
-#import Tkinter
-#import tkSnack as snack
-#root = Tkinter.Tk()
-#snack.initializeSnack(root) 
-#s = snack.Sound(load='./sounds/wail-long.wav')
-#c = snack.SnackCanvas(root, height=400) 
-#c.pack() 
-#c.create_waveform(0, 0, sound=s, height=100, zerolevel=1)
-#c.create_spectrogram(0, 150, sound=s, height=200)
-#s.play(blocking=True)
-
-# Define the notes to be used
-notes = ['a3', 'b3', 'c4', 'd4', 'e4', 'f4', 'g4', 'a4', 'b4', 'c5', 'd5', 'e5', 'f5', 'g5', 'a5']
-tones = [220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.26, 698.46, 783.99, 880.00]
-scale = zip(notes,tones)
+from matplotlib import pyplot as pl     # Use for plotting only
+import wavebender as wb
+# Define the musical scale (note, Hertz)
+scale = ['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5']
+tones = [220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.26, 698.46, 783.99, 880.00] # in Hertz
+notes = dict(zip(scale,tones))
 
 def plot_histogram(im):
     pl.plot(im.histogram())
     pl.title("Pixel Counts by color value for all bands.")
     if im.mode == 'RGB':
         pl.xlabel("Color: R(0-255), B(256-511), G(512-767)")
+    elif im.mode == 'YCbCr':
+        pl.xlabel("Color: Y(0-255), Cb(256-511), Cr(512-767)")
     pl.ylabel("Number of Pixels")
     pl.yscale("log")
     pl.show()
 
-# Convert CbCr to phi,r
 def phi_from_YCbCr(im):
-    # This may not be the fastest way.  Consider using im.getdata() or im.split() or colorsys.rgb_to_yiq(r, g, b).
-    phi = []
-    rad = []
-    lum = []
+    """From (Y,Cb,Cr), get (phi,rad,lum).
+
+    Read in (Y,Cb,Cr) from each pixel of the
+    input image.  Convert each pixel value to
+    (phi, rad, lum).  These correspond to the 
+    rotation around the color wheel, distance
+    from the center, and black/white brightness.
+
+    Returns a 3-tuple of 1D lists.  Spatial information
+    of the image is lost, and a flattened list is returned.
+    """
+    # This may not be the fastest method.
+    # Consider using im.getdata() or im.split() or colorsys.rgb_to_yiq(r, g, b).
+    phi, rad, lum = [], [], []
     pix = im.load()
     for x in range(im.size[0]):
         for y in range(im.size[1]):
-            Y, Cb, Cr = pix[x,y]
-            # Offset so values range from [-128,127]
-            Cb = Cb - 128
+            L, Cb, Cr = pix[x,y]
+            Cb = Cb - 128                           # Offset so values range from [-128,127].
             Cr = Cr - 128
-            # Ensure no divide-by-zero
-            if Cb == 0: Cb = 1
-            if Cr == 0: Cr = 1
-            # Append luminosity
-            lum.append(Y)
-            # Calculate radius
+            if Cb == 0:                             # Ensure no divide-by-zero in atan().
+                Cb = 1                    
+            if Cr == 0: 
+                Cr = 1
+            lum.append(L)
             rad.append(math.sqrt(Cb*Cb + Cr*Cr))
-            # Calculate phi
             phi0 = math.atan(Cr/Cb)
             if Cb >= 0 and Cr >= 0:
                 phi.append(phi0)
@@ -61,79 +61,99 @@ def phi_from_YCbCr(im):
                 phi.append(phi0 + 2*math.pi)
     return phi, rad, lum
 
-
-# Open image file and read in the image.
-#im = Image.open("./images/test.jpg")
-#im = Image.open("./images/firefox.png")
-#im = Image.open("./images/fire.jpg")
-#im = Image.open("./images/forest.jpg")
-#im = Image.open("./images/blue.png")
-im = Image.open("./images/mountain.png")
-
-if False:
-    thisPix = im.getpixel((400, 100))    # slow.  use .load() instead.
-    print "\nRGB for pix(400,100) is %s" % str(thisPix)
-    #plot_histogram(im)
-    pix = im.load()
-    print "\nRGB for pix(400,100) is %s" % str(pix[400, 100])
+def print_statistics(im):
+    print "\nThe color mode for this image is %s." % im.mode
+    bands = im.getbands()
+    print "The %d bands in this image are %s." % (len(bands), bands)
+    thisPix = im.getpixel((2, 2))    # slow.  use .load() instead.
+    print "Color values for pixel(2,1) are %s" % str(thisPix)
     size = im.size
-    print "\nThe image is %d by %d pixels (%d total)." % (size[0], size[1], size[0]*size[1])
-    # Get the number of pixels sitting in each color
+    print "The image is %d by %d pixels in size (%d total)." % (size[0], size[1], size[0]*size[1])
     colors = im.getcolors(maxcolors=size[0]*size[1])
-    print "\nThere are %d unique colors in this image." % len(colors)
+    print "There are %d unique colors in this image." % len(colors)
     flatSequence = im.getdata()
-    print "\nWhen flattened, the image is %d pixels long." % len(flatSequence)
+    print "When flattened, the image is %d pixels long." % len(flatSequence)
+    extrema = im.getextrema()
+    minmax = ""
+    for b in range(len(bands)):
+        minmax += bands[b]
+        minmax += ':'
+        if len(bands) == 1:
+            minmax += str(extrema)
+        else:
+            minmax += str(extrema[b]) + ' '
+    print "The min/max for the colors are %s." % minmax
 
-out = im.convert("YCbCr")
-#print "\nThe converted image has mode=%s" % out.mode
-#print "\nYCbCr for pix(400,100) is %s" % str(out.load()[400, 100])
-#print "\nRGB for pix(400,100) is %s" % str(im.load()[400, 100])
+def get_amplitudes(phi, binCount=15, showPlot=False):
+    n, bins, patches = pl.hist(phi, binCount, log=True)
+    nMax = math.log10(max(n))
+    amp = []
+    for val in n:
+        if val == 0:
+            amp.append(0)
+        else:
+            amp.append(math.log10(val) / nMax)
+    if showPlot:
+        pl.xlabel('$\phi$ Tone Parameter')
+        pl.ylabel('Number of Pixels')
+        pl.show()
+    return amp
 
-# Split into three images (one for each band).
-#y,cb,cr = out.split()
-#print min(list(cb.getdata())), max(list(cb.getdata()))
-#print y.getextrema(), print cb.getextrema(), print cr.getextrema()
-#cb.show()
-#im.show()
-#cr.show()
-#y.show()
+def super_sine_wave(freqs=[440.0], framerate=8000, amps=[0.5]):
+    '''
+    Generate a superposition of sine waves given a set of frequencies and amplitudes.
+    '''
+    for j in range(len(amps)):
+        if amps[j] > 1.0: amps[j] = 1.0
+        if amps[j] < 0.0: amps[j] = 0.0
+    for i in count(0):
+        superposition = 0.0
+        for w in range(len(freqs)):
+            sine = math.sin(2.0 * math.pi * float(freqs[w]) * (float(i) / float(framerate)))
+            superposition += float(amps[w]) * sine
+        yield superposition / float(len(freqs))
 
-# Calculate and plot phi
-phi, rad, Y = phi_from_YCbCr(out)
 
-
-n, bins, patches = pl.hist(phi, 15, log=True)
-maxn = math.log10(max(n))
-amp = []
-for val in n:
-    if val == 0:
-        amp.append(0)
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--rate', help="Sample rate in Hz", default=8000, type=int)
+    parser.add_argument('-t', '--time', help="Duration of the wave in seconds.", default=4, type=int)
+    parser.add_argument('-v', '--verbose', help="Print information to screen. Dont use if piping stdout to aplay!", action='store_true')
+    parser.add_argument('-p', '--plot', help="Plot the power spectruem", action='store_true')
+    parser.add_argument('-o', '--outfile', help="The .wav file to generate. Type '-' for stdout.", default=None, type=str)
+    parser.add_argument('infile', help="The image file to read in. Type '-' to use test.jpg")
+    args = parser.parse_args()
+    
+    if args.outfile == None:
+        outfile = sys.stdout
     else:
-        amp.append(math.log10(val) / maxn)
-if True:
-    pl.xlabel('$\phi$ Tone Parameter')
-    pl.ylabel('Number of Pixels')
-    pl.show()
-    print amp, sum(amp), max(amp)
-    print n, len(n)
-else:
-    import sys
-    import wavebender as wb
-    fr = 26000
-    channels = ((wb.sine_wave(tones[0], amplitude=amp[0], framerate=fr),), 
-                (wb.sine_wave(tones[1], amplitude=amp[1], framerate=fr),),
-                (wb.sine_wave(tones[2], amplitude=amp[2], framerate=fr),), 
-                (wb.sine_wave(tones[3], amplitude=amp[3], framerate=fr),), 
-                (wb.sine_wave(tones[4], amplitude=amp[4], framerate=fr),), 
-                (wb.sine_wave(tones[5], amplitude=amp[5], framerate=fr),), 
-                (wb.sine_wave(tones[6], amplitude=amp[6], framerate=fr),), 
-                (wb.sine_wave(tones[7], amplitude=amp[7], framerate=fr),), 
-                (wb.sine_wave(tones[8], amplitude=amp[8], framerate=fr),), 
-                (wb.sine_wave(tones[9], amplitude=amp[9], framerate=fr),), 
-                (wb.sine_wave(tones[10], amplitude=amp[10], framerate=fr),), 
-                (wb.sine_wave(tones[11], amplitude=amp[11], framerate=fr),), 
-                (wb.sine_wave(tones[12], amplitude=amp[12], framerate=fr),), 
-                (wb.sine_wave(tones[13], amplitude=amp[13], framerate=fr),), 
-                (wb.sine_wave(tones[14], amplitude=amp[14], framerate=fr),), ) 
-    samples = wb.compute_samples(channels)
-    wb.write_wavefile(sys.stdout, samples, framerate=fr, nchannels=15)
+        outfile = args.outfile
+
+    # Open image file and read in the image.
+    imOrig = Image.open(args.infile)
+    if imOrig.mode != 'RGB':
+        raise Exception('Not RGB.  %s is invalid.' % imOrig.mode)
+    imR, imG, imB = imOrig.split()                  # Split into three images (one for each band).
+    imYCbCr = imOrig.convert("YCbCr")                       # Convert the image to YCbCr
+    imY, imCb, imCr = imYCbCr.split()                  # Split into three images (one for each band).
+
+    if args.verbose:
+        print_statistics(imOrig)
+        print_statistics(imR)
+        print_statistics(imG)
+        print_statistics(imB)
+        print_statistics(imYCbCr)
+        print_statistics(imY)
+        print_statistics(imCb)
+        print_statistics(imCr)
+
+    phi, rad, lum = phi_from_YCbCr(imYCbCr)
+    amps = get_amplitudes(phi, showPlot=args.plot)
+
+    #channels = ((wb.sine_wave(notes['A4'], amplitude=0.8, framerate=args.rate),),)
+    channels = ((super_sine_wave(freqs=tones, amps=amps, framerate=args.rate),),)
+    samples = wb.compute_samples(channels, nsamples=args.rate*args.time)
+    wb.write_wavefile(outfile, samples=samples, nframes=(args.rate*args.time), nchannels=1, framerate=args.rate)
+
+if __name__ == "__main__":
+    main()
