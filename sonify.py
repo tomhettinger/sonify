@@ -7,13 +7,18 @@ from itertools import *  # used for count()
 
 from matplotlib import pyplot as pl     # Use for plotting only
 import wavebender as wb
+
+#use ffmpeg -i ./delta.mpg -an -r 10 delta_frame%06d.jpg in termal to produce frames of an mpg.
+
 # Define the musical scale (note, Hertz)
-scale = ['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5']
-tones = [220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.26, 698.46, 783.99, 880.00] # in Hertz
+scale = ['G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5']
+tones = [196.00, 220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.26, 698.46, 783.99, 880.00] # in Hertz
 notes = dict(zip(scale,tones))
 
 def plot_histogram(im):
-    pl.plot(im.histogram())
+    hist = im.histogram()
+    pl.figure()
+    pl.plot(hist)
     pl.title("Pixel Counts by color value for all bands.")
     if im.mode == 'RGB':
         pl.xlabel("Color: R(0-255), B(256-511), G(512-767)")
@@ -51,13 +56,13 @@ def phi_from_YCbCr(im):
             lum.append(L)
             rad.append(math.sqrt(Cb*Cb + Cr*Cr))
             phi0 = math.atan(Cr/Cb)
-            if Cb >= 0 and Cr >= 0:
+            if Cb > 0 and Cr > 0:                   # Quadrant I
                 phi.append(phi0)
-            elif Cb < 0 and Cr >= 0:
+            elif Cb < 0 and Cr > 0:                 # Quadrant II
                 phi.append(phi0 + math.pi)
-            elif Cb < 0 and Cr < 0:
+            elif Cb < 0 and Cr < 0:                 # Quadrant III
                 phi.append(phi0 + math.pi)
-            else:
+            else:                                   # Quadrant IV
                 phi.append(phi0 + 2*math.pi)
     return phi, rad, lum
 
@@ -84,8 +89,8 @@ def print_statistics(im):
             minmax += str(extrema[b]) + ' '
     print "The min/max for the colors are %s." % minmax
 
-def get_amplitudes(phi, binCount=15, showPlot=False):
-    n, bins, patches = pl.hist(phi, binCount, log=True)
+def get_amplitudes(phi, binCount=16, showPlot=False):
+    n, bins, patches = pl.hist(phi, binCount, range=[0, 2*math.pi], log=True)
     nMax = math.log10(max(n))
     amp = []
     for val in n:
@@ -94,6 +99,8 @@ def get_amplitudes(phi, binCount=15, showPlot=False):
         else:
             amp.append(math.log10(val) / nMax)
     if showPlot:
+        pl.xlim(0, 2*math.pi)
+        pl.xticks((0, math.pi/2., math.pi, 3*math.pi/2., 2*math.pi ), (0, 90, 180, 270, 360))
         pl.xlabel('$\phi$ Tone Parameter')
         pl.ylabel('Number of Pixels')
         pl.show()
@@ -146,6 +153,14 @@ def main():
         print_statistics(imY)
         print_statistics(imCb)
         print_statistics(imCr)
+
+    if args.plot:
+        #imY.show()
+        #imCb.show()
+        #imCr.show()
+        plot_histogram(imY)
+        plot_histogram(imCb)
+        plot_histogram(imCr)
 
     phi, rad, lum = phi_from_YCbCr(imYCbCr)
     amps = get_amplitudes(phi, showPlot=args.plot)
