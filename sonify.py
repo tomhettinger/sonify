@@ -89,8 +89,17 @@ def print_statistics(im):
             minmax += str(extrema[b]) + ' '
     print "The min/max for the colors are %s." % minmax
 
-def get_amplitudes(phi, binCount=16, showPlot=False):
-    n, bins, patches = pl.hist(phi, binCount, range=[0, 2*math.pi], log=True)
+def get_amplitudes(phi, binCount=16, showPlot=False, figure=None):
+    if figure is None:
+        figure = pl.Figure()
+    figure.clf()
+    a = figure.add_subplot(111)
+    a.set_xlim(0, 2*math.pi)
+    a.set_xticks((0, math.pi/2., math.pi, 3*math.pi/2., 2*math.pi ), (0, 90, 180, 270, 360))
+    a.set_xlabel('$\phi$ Tone Parameter')
+    a.set_ylabel('Number of Pixels')
+    n, bins, patches = a.hist(phi, binCount, range=[0, 2*math.pi], log=True)
+    figure.tight_layout()
     nMax = math.log10(max(n))
     amp = []
     for val in n:
@@ -99,10 +108,6 @@ def get_amplitudes(phi, binCount=16, showPlot=False):
         else:
             amp.append(math.log10(val) / nMax)
     if showPlot:
-        pl.xlim(0, 2*math.pi)
-        pl.xticks((0, math.pi/2., math.pi, 3*math.pi/2., 2*math.pi ), (0, 90, 180, 270, 360))
-        pl.xlabel('$\phi$ Tone Parameter')
-        pl.ylabel('Number of Pixels')
         pl.show()
     return amp
 
@@ -155,12 +160,13 @@ def main():
         print_statistics(imCr)
 
     if args.plot:
+        pass
         #imY.show()
         #imCb.show()
         #imCr.show()
-        plot_histogram(imY)
-        plot_histogram(imCb)
-        plot_histogram(imCr)
+        #plot_histogram(imY)
+        #plot_histogram(imCb)
+        #plot_histogram(imCr)
 
     phi, rad, lum = phi_from_YCbCr(imYCbCr)
     amps = get_amplitudes(phi, showPlot=args.plot)
