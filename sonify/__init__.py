@@ -1,7 +1,13 @@
 #!/usr/bin/python
+"""
+A graphical interface for loading images and coverting 
+them into sounds based on the number of pixels present
+around the color wheel.
+"""
+
+import os
 from Tkinter import *
 from PIL import Image, ImageTk
-import os
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -10,7 +16,18 @@ from matplotlib.figure import Figure
 import tkSnack as snack
 
 import sonify
-import wavebender as wb
+import wavebender
+
+# metadata
+__author__ = 'Thomas Hettinger'
+__author_email__ = 'tomhettinger@gmail.com'
+__version__ = '1.0'
+__url__ = 'https://github.com/tomhettinger/sonify'
+__longdescr__ = '''
+A graphical interface for loading images and coverting 
+them into sounds based on the number of pixels present
+around the color wheel.
+'''
 
 class GUI:
     # Class Attributes
@@ -112,7 +129,7 @@ class GUI:
         self.messageLabel.configure(text="Writing ...")
         self.myParent.update_idletasks()
         try:
-            wb.write_wavefile(filename, samples=self.samples, nframes=self.rate*self.time, 
+            wavebender.write_wavefile(filename, samples=self.samples, nframes=self.rate*self.time, 
                               nchannels=1, framerate=self.rate)
             self.messageLabel.configure(text="Successfully written to %s" % filename)
         except:
@@ -147,9 +164,9 @@ class GUI:
         amps = sonify.get_amplitudes(phi, figure=self.powerFigure)
         self.powerFigureCanvas.show()
         channels = ((sonify.super_sine_wave(freqs=sonify.tones, amps=amps, framerate=self.rate),),)
-        self.samples = wb.compute_samples(channels, nsamples=self.rate*self.time)
+        self.samples = wavebender.compute_samples(channels, nsamples=self.rate*self.time)
         try:
-            wb.write_wavefile('./temp.wav', samples=self.samples, nframes=self.rate*self.time, 
+            wavebender.write_wavefile('./temp.wav', samples=self.samples, nframes=self.rate*self.time, 
                               nchannels=1, framerate=self.rate)
             self.snd.read('./temp.wav')
             self.messageLabel.configure(text="Sonification complete.")
