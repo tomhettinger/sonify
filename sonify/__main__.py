@@ -163,7 +163,7 @@ class GUI:
         phi, rad, lum = sonify.phi_from_YCbCr(imYCbCr)
         amps = sonify.get_amplitudes(phi, figure=self.powerFigure)
         self.powerFigureCanvas.show()
-        channels = ((sonify.super_sine_wave(freqs=sonify.tones, amps=amps, framerate=self.rate),),)
+        channels = ((sonify.super_sine_wave(freqs=sonify.TONES, amps=amps, framerate=self.rate),),)
         self.samples = wavebender.compute_samples(channels, nsamples=self.rate*self.time)
         try:
             wavebender.write_wavefile('./temp.wav', samples=self.samples, nframes=self.rate*self.time, 
