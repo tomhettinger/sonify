@@ -12,7 +12,7 @@ import sys
 import math
 import argparse
 import Image
-from itertools import *  # used for count()
+from itertools import *
 
 from matplotlib import pyplot as pl
 
@@ -24,8 +24,7 @@ SCALE = dict(zip(NOTES,TONES))
 
 
 def plot_histogram(im):
-    """Plots the histogram of pixel values, separated by band.
-    """
+    """Plots the histogram of pixel values, separated by band."""
     hist = im.histogram()
     pl.figure()
     pl.plot(hist)
@@ -40,6 +39,7 @@ def plot_histogram(im):
     pl.yscale("log")
     pl.show()
 
+
 def phi_from_YCbCr(im):
     """From (Y,Cb,Cr), get (phi,rad,lum).
 
@@ -50,8 +50,7 @@ def phi_from_YCbCr(im):
     from the center, and black/white brightness.
 
     Returns a 3-tuple of 1D lists.  Spatial information
-    of the image is lost, and a flattened list is returned.
-    """
+    of the image is lost, and a flattened list is returned."""
     # This may not be the fastest method.
     # Consider using im.getdata() or colorsys.rgb_to_yiq(r, g, b).
     # Alternatively, create 3 new images (lum, phi, rad). Perform histogram with im.histogram(phi)
@@ -80,9 +79,9 @@ def phi_from_YCbCr(im):
                 phi.append(phi0 + 2*math.pi)
     return phi, rad, lum
 
+
 def print_statistics(im):
-    """Print useful information about an Image file.
-    """
+    """Print useful information about an Image file."""
     print "\nThe color mode for this image is %s." % im.mode
     bands = im.getbands()
     print "The %d bands in this image are %s." % (len(bands), bands)
@@ -105,13 +104,13 @@ def print_statistics(im):
             minmax += str(extrema[b]) + ' '
     print "The min/max for the colors are %s." % minmax
 
+
 def get_amplitudes(phi, binCount=16, showPlot=False, figure=None):
     """From a set of phi values, return a list of amplitudes.
 
     Makes a histogram of log10(phi), divided into 'binCount' 
     number of bins.  The histogram is normalized to largest bin = 1.0.
-    Returns a list of relative amplitudes between 0.0 and 1.0.
-    """
+    Returns a list of relative amplitudes between 0.0 and 1.0."""
     if figure is None:
         figure = pl.Figure()
     figure.clf()
@@ -133,9 +132,9 @@ def get_amplitudes(phi, binCount=16, showPlot=False, figure=None):
         pl.show()
     return amp
 
+
 def super_sine_wave(freqs, amps, framerate=8000):
-    '''Generate a superposition of sine waves given a set of frequencies and amplitudes.
-    '''
+    """Generate a superposition of sine waves given a set of frequencies and amplitudes."""
     for j in range(len(amps)):
         if amps[j] > 1.0: amps[j] = 1.0
         if amps[j] < 0.0: amps[j] = 0.0
@@ -192,6 +191,7 @@ def main():
     channels = ((super_sine_wave(freqs=TONES, amps=amps, framerate=args.rate),),)
     samples = wavebender.compute_samples(channels, nsamples=args.rate*args.time)
     wavebender.write_wavefile(outfile, samples=samples, nframes=(args.rate*args.time), nchannels=1, framerate=args.rate)
+
 
 if __name__ == "__main__":
     main()
