@@ -18,17 +18,6 @@ import tkSnack as snack
 import sonify
 import wavebender
 
-# metadata
-__author__ = 'Thomas Hettinger'
-__author_email__ = 'tomhettinger@gmail.com'
-__version__ = '1.0'
-__url__ = 'https://github.com/tomhettinger/sonify'
-__longdescr__ = '''
-A graphical interface for loading images and coverting 
-them into sounds based on the number of pixels present
-around the color wheel.
-'''
-
 class GUI:
     # Class Attributes
 

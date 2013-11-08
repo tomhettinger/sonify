@@ -1,2 +1,3 @@
 #!/usr/bin/env python
-# This should be my executable script.
+from sonify import gui
+gui.main()
