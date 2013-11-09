@@ -20,9 +20,7 @@ setup(name='sonify',
                         'matplotlib >= 1.1.1', 
                         'PIL >= 1.1.6', 
                         'wavebender == 0.2', 
-                        'tkSnack >= 2.2.10'
+                        'pygame >= 1.9.1',
       ],
-      dependency_links=['http://github.com/tomhettinger/wavebender/tarball/master#egg=wavebender-0.2',
-                        'http://www.speech.kth.se/snack/dist/snack2.2.10.tar.gz#egg=tkSnack-2.2.10'
-      ]
+      dependency_links=['http://github.com/tomhettinger/wavebender/tarball/master#egg=wavebender-0.2']
 )
