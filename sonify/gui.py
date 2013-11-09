@@ -10,7 +10,6 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
-from tkSnack import tkSnack as snack
 from PIL import Image, ImageTk
 import wavebender
 
@@ -21,8 +20,7 @@ class GUI:
     def __init__(self, parent):
         # Instance Attributes
         self.targetImage = None
-        self.samples = None
-        self.snd = snack.Sound()
+        self.channels = None
         self.maxWidth = 1000
         self.maxHeight = 600
         self.rate = 16000
@@ -34,7 +32,7 @@ class GUI:
         C Major scale.  The more color a note has, the stronger
         the note is played.
 
-        After you sonify, you can play it back or write it to a file.
+        After you sonify, you can write it to a file and play it back.
 
         <Currently only supports RGB .jpg>
         """
@@ -66,14 +64,14 @@ class GUI:
         self.loadImageEntry.grid(column=0, row=0)
         self.loadImageButton = Button(self.loadImageFrame, text='Load', command=self.load_image)
         self.loadImageButton.grid(column=1, row=0)
-        # Play button
-        self.playButton = Button(self.dataFrame, text='Play', width=50, command=self.play_wave)
-        self.playButton.grid(column=0, row=1)
+        # Sonify button
+        self.sonifyButton = Button(self.dataFrame, text='Sonify', width=50, command=self.sonify_image)
+        self.sonifyButton.grid(column=0, row=1)
         # Write field and button
         self.writeFrame = Frame(self.dataFrame)
         self.writeFrame.grid(column=0, row=2)
         self.writeEntry = Entry(self.writeFrame, width=45)
-        self.writeEntry.insert(0, "./sounds/temp.wav")
+        self.writeEntry.insert(0, "./new_sonification.wav")
         self.writeEntry.grid(column=0, row=0)
         self.writeButton = Button(self.writeFrame, text='Write', command=self.write_wave)
         self.writeButton.grid(column=1, row=0)
@@ -100,11 +98,6 @@ class GUI:
         self.powerWidget.grid(column=0, row=1)
 
 
-    def __del__(self):
-        if os.path.exists('./temp.wav'):
-            os.remove('./temp.wav')
-
-
     def write_wave(self):
         """Pull the output path from the write field 
         and save the sound wave to this file."""
@@ -127,21 +120,8 @@ class GUI:
             self.messageLabel.configure(text="Write failed. Try another image or output filename.")
 
 
-    def play_wave(self):
-        """Play the sound wav located at ./temp.wav"""
-        if not os.path.exists('./temp.wav'):
-            self.messageLabel.configure(text="Unable to find sonification.")
-            return
-        self.messageLabel.configure(text="")
-        self.messageLabel.configure(text="Playing ...")
-        self.myParent.update_idletasks()
-        self.snd.play(blocking=True)
-        self.messageLabel.configure(text="")
-        
-
     def sonify_image(self):
-        """Use the sonify module to create a sound wave based on color.
-        Store the sound wave in ./temp.wav"""
+        """Use the sonify module to create a sound wave based on color."""
         self.messageLabel.configure(text="")
         if self.targetImage is None:
             self.messageLabel.configure(text="Must load an image first.")
@@ -157,21 +137,12 @@ class GUI:
         phi, rad, lum = sonify.phi_from_YCbCr(imYCbCr)
         amps = sonify.get_amplitudes(phi, figure=self.powerFigure)
         self.powerFigureCanvas.show()
-        self.channels = ((sonify.super_sine_wave(freqs=sonify.TONES, amps=amps, framerate=self.rate),),)
-        thisSamples = wavebender.compute_samples(self.channels, nsamples=self.rate*self.time)
-
-        # Write the image to ./temp.wav
-        try:
-            wavebender.write_wavefile('./temp.wav', samples=thisSamples, nframes=self.rate*self.time, 
-                                      nchannels=1, framerate=self.rate)
-            self.snd.read('./temp.wav')
-            self.messageLabel.configure(text="Sonification complete.")
-        except:
-            self.messageLabel.configure(text="Errors in temp write.")
+        self.channels = ((sonify.super_sine_wave(freqs=sonify.TONES, amps=amps, framerate=self.rate),),)        
+        self.messageLabel.configure(text="Sonification complete.")
 
 
     def load_image(self):
-        """Open the image from teh path specified in the load field."""
+        """Open the image from the path specified in the load field."""
         self.messageLabel.configure(text="")
         filename = self.loadImageEntry.get()
         try:
@@ -189,17 +160,12 @@ class GUI:
         photo = ImageTk.PhotoImage(resizedImage)
         self.displayIm.configure(image=photo)
         self.displayIm.image = photo
-        self.sonify_image()
 
 
 def main():
     """Begin GUI loop."""
-    if os.path.exists('./temp.wav'):
-        print './temp.wav already exists'
-        sys.exit()
     root = Tk()
     root.title("Sonify")
-    snack.initializeSnack(root)
     myGUI = GUI(root)
     root.resizable(False, False)
     root.mainloop()
