@@ -34,7 +34,8 @@ class GUI:
 
         After you sonify, you can write it to a file and play it back.
 
-        <Currently only supports RGB .jpg>
+        < Does not support all file types and color types.
+          PIL jpeg libraries may be required. >
         """
 
         # Parent Frame containing four sub-frames
@@ -60,7 +61,7 @@ class GUI:
         self.loadImageFrame = Frame(self.dataFrame)
         self.loadImageFrame.grid(column=0, row=0)
         self.loadImageEntry = Entry(self.loadImageFrame, width=45)
-        self.loadImageEntry.insert(0, "./images/forest.jpg")
+        self.loadImageEntry.insert(0, "Path to image file.")
         self.loadImageEntry.grid(column=0, row=0)
         self.loadImageButton = Button(self.loadImageFrame, text='Load', command=self.load_image)
         self.loadImageButton.grid(column=1, row=0)
@@ -126,18 +127,25 @@ class GUI:
         if self.targetImage is None:
             self.messageLabel.configure(text="Must load an image first.")
             return
-        if self.targetImage.mode != 'RGB':
-            self.messageLabel.configure(text='Not RGB.  %s is invalid.' % self.targetImage.mode)
-            return
         self.messageLabel.configure(text="Converting ...")
         self.myParent.update_idletasks()
-
-        # Convert the image to YCbCr
-        imYCbCr = self.targetImage.convert("YCbCr")
-        phi, rad, lum = sonify.phi_from_YCbCr(imYCbCr)
-        amps = sonify.get_amplitudes(phi, figure=self.powerFigure)
-        self.powerFigureCanvas.show()
-        self.channels = ((sonify.super_sine_wave(freqs=sonify.TONES, amps=amps, framerate=self.rate),),)        
+        try:
+            imYCbCr = self.targetImage.convert("YCbCr")
+        except:
+            self.messageLabel.configure(text='Unable to convert (%s) to YCbCr.' % self.targetImage.mode)
+            return
+        try:
+            phi, rad, lum = sonify.phi_from_YCbCr(imYCbCr)
+            amps = sonify.get_amplitudes(phi, figure=self.powerFigure)
+            self.powerFigureCanvas.show()
+        except:
+            self.messageLabel.configure(text='Failure to calculate frequencies.')
+            return
+        try:
+            self.channels = ((sonify.super_sine_wave(freqs=sonify.TONES, amps=amps, framerate=self.rate),),)        
+        except:
+            self.messageLabel.configure(text='Failure to calculate waveform.')
+            return
         self.messageLabel.configure(text="Sonification complete.")
 
 
@@ -145,10 +153,13 @@ class GUI:
         """Open the image from the path specified in the load field."""
         self.messageLabel.configure(text="")
         filename = self.loadImageEntry.get()
+        if not os.path.exists(filename):
+            self.messageLabel.configure(text="File not found.")
+            return
         try:
             self.targetImage = Image.open(filename)
         except:
-            self.messageLabel.configure(text="Try another filename.")
+            self.messageLabel.configure(text="Unable to interpret image.")
             return
         if self.targetImage.size[0] < self.targetImage.size[1]:
             factor = self.maxWidth / 2. / float(self.targetImage.size[0])

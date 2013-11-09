@@ -114,11 +114,22 @@ def get_amplitudes(phi, binCount=16, showPlot=False, figure=None):
         figure = pl.Figure()
     figure.clf()
     a = figure.add_subplot(111)
-    a.set_xlim(0, 2*math.pi)
-    a.set_xticks((0, math.pi/2., math.pi, 3*math.pi/2., 2*math.pi ), (0, 90, 180, 270, 360))
-    a.set_xlabel('$\phi$ Tone Parameter')
-    a.set_ylabel('Number of Pixels')
     n, bins, patches = a.hist(phi, binCount, range=[0, 2*math.pi], log=True)
+ 
+    a.set_ylabel('Number of Pixels')
+    a.set_xlim(0, 2*math.pi)
+    a.set_xticks(bins)
+    a.set_xticklabels([])
+    bin_centers = [bins[i] + 0.5*(bins[1]-bins[0]) for i in range(len(bins)-1)]
+    for note, x in zip(NOTES, bin_centers):
+        a.annotate(note, xy=(x, 0), xycoords=('data', 'axes fraction'),
+                   xytext=(0, -10), textcoords='offset points', va='top', ha='center', size=11)
+
+    a2 = a.twiny() # a2 is responsible for "top" axis
+    a2.set_xticks((0, math.pi/2., math.pi, 3*math.pi/2., 2*math.pi))
+    a2.set_xticklabels((0, 90, 180, 270, 360), size=10)
+    a2.set_xlabel('$\phi$ Tone Parameter', size=10)    
+
     figure.tight_layout()
     nMax = math.log10(max(n))
     amp = []
