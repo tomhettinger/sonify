@@ -10,8 +10,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
+import tkSnack as snack
 from PIL import Image, ImageTk
-from pygame import mixer
 import wavebender
 
 import sonify
@@ -21,8 +21,8 @@ class GUI:
     def __init__(self, parent):
         # Instance Attributes
         self.targetImage = None
-        self.channels = None
-        self.snd = None
+        self.samples = None
+        self.snd = snack.Sound()
         self.maxWidth = 1000
         self.maxHeight = 600
         self.rate = 16000
@@ -73,7 +73,7 @@ class GUI:
         self.writeFrame = Frame(self.dataFrame)
         self.writeFrame.grid(column=0, row=2)
         self.writeEntry = Entry(self.writeFrame, width=45)
-        self.writeEntry.insert(0, "./sonify_temp.wav")
+        self.writeEntry.insert(0, "./sounds/temp.wav")
         self.writeEntry.grid(column=0, row=0)
         self.writeButton = Button(self.writeFrame, text='Write', command=self.write_wave)
         self.writeButton.grid(column=1, row=0)
@@ -101,8 +101,8 @@ class GUI:
 
 
     def __del__(self):
-        if os.path.exists('./sonify_temp.wav'):
-            os.remove('./sonify_temp.wav')
+        if os.path.exists('./temp.wav'):
+            os.remove('./temp.wav')
 
 
     def write_wave(self):
@@ -128,20 +128,20 @@ class GUI:
 
 
     def play_wave(self):
-        """Play the sound wav located at ./sonify_temp.wav"""
-        if not os.path.exists('./sonify_temp.wav'):
+        """Play the sound wav located at ./temp.wav"""
+        if not os.path.exists('./temp.wav'):
             self.messageLabel.configure(text="Unable to find sonification.")
             return
         self.messageLabel.configure(text="")
         self.messageLabel.configure(text="Playing ...")
         self.myParent.update_idletasks()
-        self.snd.play()
+        self.snd.play(blocking=True)
         self.messageLabel.configure(text="")
         
 
     def sonify_image(self):
         """Use the sonify module to create a sound wave based on color.
-        Store the sound wave in ./sonify_temp.wav"""
+        Store the sound wave in ./temp.wav"""
         self.messageLabel.configure(text="")
         if self.targetImage is None:
             self.messageLabel.configure(text="Must load an image first.")
@@ -160,11 +160,11 @@ class GUI:
         self.channels = ((sonify.super_sine_wave(freqs=sonify.TONES, amps=amps, framerate=self.rate),),)
         thisSamples = wavebender.compute_samples(self.channels, nsamples=self.rate*self.time)
 
-        # Write the image to ./sonify_temp.wav
+        # Write the image to ./temp.wav
         try:
-            wavebender.write_wavefile('./sonify_temp.wav', samples=thisSamples, nframes=self.rate*self.time, 
+            wavebender.write_wavefile('./temp.wav', samples=thisSamples, nframes=self.rate*self.time, 
                                       nchannels=1, framerate=self.rate)
-            self.snd = mixer.Sound("./sonify_temp.wav")
+            self.snd.read('./temp.wav')
             self.messageLabel.configure(text="Sonification complete.")
         except:
             self.messageLabel.configure(text="Errors in temp write.")
@@ -194,12 +194,12 @@ class GUI:
 
 def main():
     """Begin GUI loop."""
-    if os.path.exists('./sonify_temp.wav'):
-        print './sonify_temp.wav already exists'
+    if os.path.exists('./temp.wav'):
+        print './temp.wav already exists'
         sys.exit()
-    mixer.init(44100)
     root = Tk()
     root.title("Sonify")
+    snack.initializeSnack(root)
     myGUI = GUI(root)
     root.resizable(False, False)
     root.mainloop()
