@@ -5,16 +5,16 @@ around the color wheel."""
 
 import os
 from Tkinter import *
-from PIL import Image, ImageTk
 
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import tkSnack as snack
+from PIL import Image, ImageTk
+import wavebender
 
 import sonify
-import wavebender
 
 class GUI:
 

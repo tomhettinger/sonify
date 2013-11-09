@@ -6,16 +6,15 @@ Usage:
     Use get_amplitudes(phi) to return a set of amplitudes.
     Create a soundwave from a set of amplitudes with 
         super_sine_wave(freqs=TONES, amps=amplitudes).
-    Use wavebender to write out the soundwave to a file or stdout.
-"""
+    Use wavebender to write out the soundwave to a file or stdout."""
+
 import sys
 import math
 import argparse
-import Image
 from itertools import *
 
 from matplotlib import pyplot as pl
-
+from PIL import Image
 import wavebender
 
 NOTES = ['G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5']
