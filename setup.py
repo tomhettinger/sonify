@@ -23,6 +23,6 @@ setup(name='sonify',
                         'tkSnack >= 2.2.10'
       ],
       dependency_links=['http://github.com/tomhettinger/wavebender/tarball/master#egg=wavebender-0.2',
-                        'http://www.speech.kth.se/snack/dist/snack2.2.10.tar.gz'#egg=tkSnack-2.2.10'
+                        'http://www.speech.kth.se/snack/dist/snack2.2.10.tar.gz#egg=tkSnack-2.2.10'
       ]
 )
