@@ -2,6 +2,9 @@
 
 `sonify` A graphical interface for loading images and coverting them into sounds based on the number of pixels present around the color wheel.
 
+Click the gator to hear what is looks like:
+[![gator](https://raw.githubusercontent.com/tomhettinger/sonify/master/example/florida_logo.jpg)](https://soundcloud.com/ssjsonic1/florida-logo)
+
 
 ## Installation
 
